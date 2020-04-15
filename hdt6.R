@@ -1,9 +1,9 @@
 # Universidad del Valle de Guatemala
 # MinerÃ­a de Datos - SecciÃ³n 10
 # Integrantes: Oscar JuÃ¡rez, JosÃ© Cifuentes, Luis EsturbÃ¡n
-# Fecha: 26/03/20
+# Fecha: 15/04/20
 
-# HOJA DE TRABAJO 5: Redes bayesianas
+# HOJA DE TRABAJO 6: Regresion logistica
 
 # Setear directorio de trabajo
 setwd("./")
@@ -29,8 +29,10 @@ for (value in data[,"SalePrice"]) {
     grupoRespuesta <- c(grupoRespuesta, "intermedia")
   }
 }
-
 data$grupoRespuesta <- grupoRespuesta
+
+#Se crean las variables dicotomicas
+data<-cbind(data,dummy(data$grupoRespuesta,verbose = T))
 
 # Datos a utilizar
 set.seed(69)
@@ -65,12 +67,16 @@ corrplot(matriz_cor)
 
 # Por lo tanto, hacemos un segundo modelo con las variables que sÃ­ aportan al modelo
 varNames <- c("MSSubClass","LotArea","OverallQual","OverallCond","X1stFlrSF","BsmtFullBath","BedroomAbvGr","GarageCars","grupoRespuesta")
-# varNames <- c("LotArea","OverallQual", "BedroomAbvGr","GarageCars","grupoRespuesta")
 
+
+#############################################################################################
+modelo<-glm(datacara~., data = train[,varNames],family = binomial(), maxit=100)
+
+################################################################################################
 modelo <- naiveBayes(as.factor(grupoRespuesta)~.,data=train[,varNames])
 summary(modelo)
 
-
+data2<-data[,varNames]
 # Ahora, hacemos un vector sin la variable que queremos predecir
 testVarNames <- c("MSSubClass","LotArea","OverallQual","OverallCond","X1stFlrSF","BsmtFullBath","BedroomAbvGr","GarageCars")
 
@@ -83,3 +89,61 @@ predBayes <- predict(modelo, test[,testVarNames])
 
 # Â¿Que tan bien predijo el modelo? Usamos la matriz de confusiÃ³n
 confusionMatrix(predBayes, as.factor(test$grupoRespuesta))
+
+
+#############################################################################################
+varNames <- c("MSSubClass","LotArea","OverallQual","OverallCond","X1stFlrSF","BsmtFullBath","BedroomAbvGr","GarageCars","grupoRespuesta","datacara","dataeconomica","dataintermedia")
+train2<-train[,varNames]
+test2<-test[,varNames]
+
+#Modelo logistico para datacara
+modelo<-glm(datacara~., data = train2[,c(1:8,10)],family = binomial(), maxit=100)
+pred<-predict(modelo,newdata = test2[,1:8], type = "response")
+prediccion<-ifelse(pred>=0.5,1,0)
+confusionMatrix(as.factor(prediccion),as.factor(test2$datacara))
+
+ggplot(data = test2[,1:8], aes(x = test2$datacara, y = prediccion)) +
+  geom_point(aes(color = as.factor(prediccion)), shape = 1) + 
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              color = "gray20",
+              se = FALSE) +
+  theme_bw() +
+  labs(title = "Regresión logística de Casas Caras",
+       y = "Probabilidad") +
+  theme(legend.position = "none")
+
+
+#Modelo logistico para dataeconomica
+modelo<-glm(dataeconomica~., data = train2[,c(1:8,11)],family = binomial(), maxit=100)
+pred<-predict(modelo,newdata = test2[,1:8], type = "response")
+prediccion<-ifelse(pred>=0.5,1,0)
+confusionMatrix(as.factor(prediccion),as.factor(test2$dataeconomica))
+
+ggplot(data = test2[,1:8], aes(x = test2$dataeconomica, y = prediccion)) +
+  geom_point(aes(color = as.factor(prediccion)), shape = 1) + 
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              color = "gray20",
+              se = FALSE) +
+  theme_bw() +
+  labs(title = "Regresión logística de Casas Economicas",
+       y = "Probabilidad") +
+  theme(legend.position = "none")
+
+#Modelo logistico para dataintermedia
+modelo<-glm(dataintermedia~., data = train2[,c(1:8,12)],family = binomial(), maxit=100)
+pred<-predict(modelo,newdata = test2[,1:8], type = "response")
+prediccion<-ifelse(pred>=0.5,1,0)
+confusionMatrix(as.factor(prediccion),as.factor(test2$dataintermedia))
+
+ggplot(data = test2[,1:8], aes(x = test2$dataintermedia, y = prediccion)) +
+  geom_point(aes(color = as.factor(prediccion)), shape = 1) + 
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"),
+              color = "gray20",
+              se = FALSE) +
+  theme_bw() +
+  labs(title = "Regresión logística de Casas Intermedias",
+       y = "Probabilidad") +
+  theme(legend.position = "none")
